@@ -3,7 +3,7 @@
 import { menu, rupiah } from "@/Data/Menu";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { use, useState, Suspense } from "react";
+import { use, useState, useEffect, Suspense } from "react";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -37,6 +37,44 @@ function DetailContent({ params }: PageProps) {
   const [jumlah, setJumlah] = useState<number>(1);
   const [pesan, setPesan] = useState<string>("");
   const [errorPesan, setErrorPesan] = useState<string>("");
+  const [isFavorit, setIsFavorit] = useState<boolean>(false);
+
+  // Cek status favorit dari localStorage saat dimuat
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const favStr = localStorage.getItem("favorit");
+    if (favStr) {
+      try {
+        const favList: number[] = JSON.parse(favStr);
+        setIsFavorit(favList.includes(item.id));
+      } catch {
+        setIsFavorit(false);
+      }
+    }
+  }, [item.id]);
+
+  const toggleFavorit = () => {
+    if (typeof window === "undefined") return;
+    const favStr = localStorage.getItem("favorit");
+    let favList: number[] = [];
+    if (favStr) {
+      try {
+        favList = JSON.parse(favStr);
+      } catch {
+        favList = [];
+      }
+    }
+
+    if (isFavorit) {
+      favList = favList.filter((id) => id !== item.id);
+      setIsFavorit(false);
+    } else {
+      favList.push(item.id);
+      setIsFavorit(true);
+    }
+
+    localStorage.setItem("favorit", JSON.stringify(favList));
+  };
 
   const getJumlahDiKeranjang = (idMenu: number): number => {
     if (typeof window === "undefined") return 0;
@@ -44,7 +82,7 @@ function DetailContent({ params }: PageProps) {
     if (!keranjangStr) return 0;
     try {
       const keranjang: CartItem[] = JSON.parse(keranjangStr);
-      const found = keranjang.find((item) => item.id === idMenu);
+      const found = keranjang.find((ci) => ci.id === idMenu);
       return found ? found.jumlah : 0;
     } catch {
       return 0;
@@ -111,12 +149,26 @@ function DetailContent({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-2xl py-8 text-white">
-      <Link
-        href="/Menu"
-        className="text-sm text-orange-500 hover:underline font-medium"
-      >
-        &larr; Kembali ke Daftar Menu
-      </Link>
+      <div className="flex justify-between items-center">
+        <Link
+          href="/Menu"
+          className="text-sm text-orange-500 hover:underline font-medium"
+        >
+          &larr; Kembali ke Daftar Menu
+        </Link>
+
+        {/* Tombol Favorit Sesuai Ketentuan Poin 16 */}
+        <button
+          onClick={toggleFavorit}
+          className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800 flex items-center gap-2"
+        >
+          {isFavorit ? (
+            <span className="text-red-500">♥ Favorit</span>
+          ) : (
+            <span className="text-slate-400">♡ Tambah favorit</span>
+          )}
+        </button>
+      </div>
 
       <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-md">
         <span className="inline-block rounded bg-orange-500/20 px-3 py-1 text-xs font-medium text-orange-400">
@@ -137,7 +189,7 @@ function DetailContent({ params }: PageProps) {
                 {item.stok} porsi
               </span>
             ) : (
-              <span className="font-bold text-red-500">0.</span>
+              <span className="font-bold text-red-500">Menu ini habis.</span>
             )}
           </p>
           {sudahDiKeranjang > 0 && (
