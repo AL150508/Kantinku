@@ -14,24 +14,22 @@ type MenuItem = {
 
 export default function FavoritPage() {
   const [menuList, setMenuList] = useState<MenuItem[]>([]);
-  const [favoritIds, setFavoritIds] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
-  useEffect(() => {
-    // Ambil data favorit dari localStorage
-    if (typeof window !== "undefined") {
-      const favStr = localStorage.getItem("favorit");
-      if (favStr) {
-        try {
-          setFavoritIds(JSON.parse(favStr));
-        } catch {
-          setFavoritIds([]);
-        }
-      }
+  // Lazy initialization untuk menghindari setState di dalam useEffect
+  const [favoritIds] = useState<number[]>(() => {
+    if (typeof window === "undefined") return [];
+    const favStr = localStorage.getItem("favorit");
+    if (!favStr) return [];
+    try {
+      return JSON.parse(favStr);
+    } catch {
+      return [];
     }
+  });
 
-    // Fetch data menu dari Route Handler /api/menu sesuai ketentuan poin 18
+  useEffect(() => {
     fetch("/api/menu")
       .then((res) => {
         if (!res.ok) throw new Error("Gagal memuat data menu.");

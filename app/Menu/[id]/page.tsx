@@ -3,7 +3,7 @@
 import { menu, rupiah } from "@/Data/Menu";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { use, useState, useEffect, Suspense } from "react";
+import { use, useState, Suspense } from "react";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -37,21 +37,19 @@ function DetailContent({ params }: PageProps) {
   const [jumlah, setJumlah] = useState<number>(1);
   const [pesan, setPesan] = useState<string>("");
   const [errorPesan, setErrorPesan] = useState<string>("");
-  const [isFavorit, setIsFavorit] = useState<boolean>(false);
 
-  // Cek status favorit dari localStorage saat dimuat
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // Lazy initialization untuk status favorit
+  const [isFavorit, setIsFavorit] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
     const favStr = localStorage.getItem("favorit");
-    if (favStr) {
-      try {
-        const favList: number[] = JSON.parse(favStr);
-        setIsFavorit(favList.includes(item.id));
-      } catch {
-        setIsFavorit(false);
-      }
+    if (!favStr) return false;
+    try {
+      const favList: number[] = JSON.parse(favStr);
+      return favList.includes(item.id);
+    } catch {
+      return false;
     }
-  }, [item.id]);
+  });
 
   const toggleFavorit = () => {
     if (typeof window === "undefined") return;
@@ -148,7 +146,7 @@ function DetailContent({ params }: PageProps) {
   };
 
   return (
-    <div className="mx-auto max-w-2xl py-8 text-white">
+    <div className="mx-auto max-w-2xl py-8 text-white px-4">
       <div className="flex justify-between items-center">
         <Link
           href="/Menu"
@@ -157,7 +155,6 @@ function DetailContent({ params }: PageProps) {
           &larr; Kembali ke Daftar Menu
         </Link>
 
-        {/* Tombol Favorit Sesuai Ketentuan Poin 16 */}
         <button
           onClick={toggleFavorit}
           className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800 flex items-center gap-2"

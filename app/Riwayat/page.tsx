@@ -17,9 +17,11 @@ type RiwayatItem = {
 };
 
 export default function RiwayatPage() {
+  const [isMounted, setIsMounted] = useState<boolean>(false);
   const [riwayatList, setRiwayatList] = useState<RiwayatItem[]>([]);
 
   useEffect(() => {
+    setIsMounted(true);
     if (typeof window !== "undefined") {
       const dataStr = localStorage.getItem("riwayat");
       if (dataStr) {
@@ -31,6 +33,12 @@ export default function RiwayatPage() {
       }
     }
   }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="py-16 text-center text-slate-400">Memuat riwayat...</div>
+    );
+  }
 
   const totalBelanjaSemua = riwayatList.reduce(
     (acc, item) => acc + item.total,
@@ -53,13 +61,11 @@ export default function RiwayatPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-6">
-          {/* Ringkasan N pesanan, total belanja Rp .... */}
           <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm font-medium text-orange-400">
             {riwayatList.length} pesanan, total belanja{" "}
             {rupiah(totalBelanjaSemua)}
           </div>
 
-          {/* Daftar Kotak Riwayat Pesanan */}
           <div className="space-y-4">
             {riwayatList.map((item, index) => (
               <div
@@ -67,7 +73,6 @@ export default function RiwayatPage() {
                 className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-md space-y-3 overflow-hidden"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between border-b border-slate-800 pb-3 gap-2">
-                  {/* Bagian Nama & Kelas dengan pembatas lebar agar tidak meluber */}
                   <div className="min-w-0 flex-1 pr-4">
                     <h2 className="font-bold text-lg text-slate-100 break-words">
                       {item.nama}

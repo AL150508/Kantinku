@@ -22,6 +22,7 @@ type RiwayatItem = {
 };
 
 export default function KeranjangPage() {
+  const [isMounted, setIsMounted] = useState<boolean>(false);
   const [keranjang, setKeranjang] = useState<CartItem[]>([]);
   const [kodePromoInput, setKodePromoInput] = useState<string>("");
   const [promoAktif, setPromoAktif] = useState<boolean>(false);
@@ -34,21 +35,19 @@ export default function KeranjangPage() {
   const [pesanErrorForm, setPesanErrorForm] = useState<string>("");
   const [strukBerhasil, setStrukBerhasil] = useState<RiwayatItem | null>(null);
 
-  // Ambil data keranjang dari localStorage saat halaman dimuat
   useEffect(() => {
-    muatKeranjang();
-  }, []);
-
-  const muatKeranjang = () => {
-    const dataStr = localStorage.getItem("keranjang");
-    if (dataStr) {
-      try {
-        setKeranjang(JSON.parse(dataStr));
-      } catch {
-        setKeranjang([]);
+    setIsMounted(true);
+    if (typeof window !== "undefined") {
+      const dataStr = localStorage.getItem("keranjang");
+      if (dataStr) {
+        try {
+          setKeranjang(JSON.parse(dataStr));
+        } catch {
+          setKeranjang([]);
+        }
       }
     }
-  };
+  }, []);
 
   const simpanDanBroadcast = (items: CartItem[]) => {
     setKeranjang(items);
@@ -56,7 +55,6 @@ export default function KeranjangPage() {
     window.dispatchEvent(new Event("keranjang-berubah"));
   };
 
-  // Ubah jumlah item di keranjang dengan tombol + / -
   const handleUbahJumlah = (id: number, delta: number) => {
     const itemMenu = menu.find((m) => m.id === id);
     if (!itemMenu) return;
@@ -84,13 +82,11 @@ export default function KeranjangPage() {
     simpanDanBroadcast(newCart);
   };
 
-  // Hitung Subtotal
   const subtotal = keranjang.reduce((acc, ci) => {
     const itemMenu = menu.find((m) => m.id === ci.id);
     return acc + (itemMenu ? itemMenu.harga * ci.jumlah : 0);
   }, 0);
 
-  // Validasi & Terapkan Kode Promo
   const handlePakaiPromo = () => {
     const kode = kodePromoInput.trim().toUpperCase();
     if (kode === "") {
@@ -115,21 +111,11 @@ export default function KeranjangPage() {
     setPesanPromo("Promo HEMAT10 dipakai: diskon 10%.");
   };
 
-  // Jika subtotal turun di bawah 20rb, diskon otomatis tidak berlaku
-  useEffect(() => {
-    if (promoAktif && subtotal < 20000) {
-      setPromoAktif(false);
-      setPesanPromo(
-        "Subtotal kurang dari Rp 20.000, diskon otomatis tidak berlaku.",
-      );
-    }
-  }, [subtotal, promoAktif]);
-
-  const diskon = promoAktif ? Math.round(subtotal * 0.1) : 0;
+  const isPromoValid = promoAktif && subtotal >= 20000;
+  const diskon = isPromoValid ? Math.round(subtotal * 0.1) : 0;
   const ongkir = caraAmbil === "diantar" ? 2000 : 0;
   const total = subtotal - diskon + ongkir;
 
-  // Proses Pesan Sekarang
   const handlePesanSekarang = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -147,7 +133,6 @@ export default function KeranjangPage() {
 
     setPesanErrorForm("");
 
-    // Buat rincian struk
     const rincianArray = keranjang.map((ci) => {
       const m = menu.find((item) => item.id === ci.id);
       const nama = m ? m.nama : "Menu";
@@ -170,7 +155,6 @@ export default function KeranjangPage() {
       total,
     };
 
-    // Simpan ke Riwayat di localStorage
     const riwayatStr = localStorage.getItem("riwayat");
     let riwayatList: RiwayatItem[] = [];
     if (riwayatStr) {
@@ -183,7 +167,6 @@ export default function KeranjangPage() {
     riwayatList.unshift(dataStruk);
     localStorage.setItem("riwayat", JSON.stringify(riwayatList));
 
-    // Tampilkan struk berhasil & kosongkan keranjang
     setStrukBerhasil(dataStruk);
     simpanDanBroadcast([]);
     setNamaPemesan("");
@@ -193,9 +176,18 @@ export default function KeranjangPage() {
     setPesanPromo("");
   };
 
+  // Jangan render isi keranjang sebelum komponen ter-mount di klien untuk mencegah hydration error
+  if (!isMounted) {
+    return (
+      <div className="py-16 text-center text-slate-400">
+        Memuat keranjang...
+      </div>
+    );
+  }
+
   if (strukBerhasil) {
     return (
-      <div className="mx-auto max-w-xl py-10 text-white">
+      <div className="mx-auto max-w-xl py-10 text-white px-4">
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-md text-center">
           <span className="inline-block rounded-full bg-green-500/20 px-4 py-1 text-xs font-semibold text-green-400">
             Pesanan Berhasil!
@@ -273,7 +265,7 @@ export default function KeranjangPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl py-8 text-white">
+    <div className="mx-auto max-w-3xl py-8 text-white px-4">
       <h1 className="text-3xl font-bold">Keranjang Belanja</h1>
 
       {keranjang.length === 0 ? (
@@ -288,7 +280,6 @@ export default function KeranjangPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-6">
-          {/* Daftar Item Keranjang */}
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-md divide-y divide-slate-800">
             {keranjang.map((ci) => {
               const itemMenu = menu.find((m) => m.id === ci.id);
@@ -342,7 +333,6 @@ export default function KeranjangPage() {
             })}
           </div>
 
-          {/* Bagian Kode Promo */}
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-md space-y-3">
             <label className="block text-sm font-medium text-slate-300">
               Kode Promo
@@ -365,14 +355,13 @@ export default function KeranjangPage() {
             </div>
             {pesanPromo && (
               <p
-                className={`text-sm font-medium ${promoAktif ? "text-green-400" : "text-red-400"}`}
+                className={`text-sm font-medium ${isPromoValid ? "text-green-400" : "text-red-400"}`}
               >
                 {pesanPromo}
               </p>
             )}
           </div>
 
-          {/* Opsi Cara Ambil */}
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-md space-y-4">
             <label className="block text-sm font-medium text-slate-300">
               Cara Ambil
@@ -402,7 +391,6 @@ export default function KeranjangPage() {
             </div>
           </div>
 
-          {/* Ringkasan Biaya & Form Pemesan */}
           <form
             onSubmit={handlePesanSekarang}
             className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-md space-y-4"
