@@ -25,28 +25,21 @@ function NavLinks() {
   const [totalItem, setTotalItem] = useState<number>(0);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-
+useEffect(() => {
     const hitungKeranjang = () => {
       if (typeof window === "undefined") return;
-      const keranjangStr = localStorage.getItem("keranjang");
-      if (!keranjangStr) {
-        setTotalItem(0);
-        return;
-      }
-      try {
-        const keranjang: { id: number; jumlah: number }[] =
-          JSON.parse(keranjangStr);
-        const total = keranjang.reduce((acc, item) => acc + item.jumlah, 0);
-        setTotalItem(total);
-      } catch {
-        setTotalItem(0);
+      const dataStr = localStorage.getItem("keranjang");
+      if (dataStr) {
+        try {
+          const items = JSON.parse(dataStr);
+          // sesuaikan state hitungan keranjang Anda di sini
+        } catch {
+          // tangani error jika perlu
+        }
       }
     };
 
     hitungKeranjang();
-
     window.addEventListener("keranjang-berubah", hitungKeranjang);
     return () => {
       window.removeEventListener("keranjang-berubah", hitungKeranjang);

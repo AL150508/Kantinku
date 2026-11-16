@@ -2,7 +2,7 @@
 
 import { rupiah } from "@/Data/Menu";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 type RiwayatItem = {
   tanggal: string;
@@ -17,28 +17,17 @@ type RiwayatItem = {
 };
 
 export default function RiwayatPage() {
-  const [isMounted, setIsMounted] = useState<boolean>(false);
-  const [riwayatList, setRiwayatList] = useState<RiwayatItem[]>([]);
-
-  useEffect(() => {
-    setIsMounted(true);
-    if (typeof window !== "undefined") {
-      const dataStr = localStorage.getItem("riwayat");
-      if (dataStr) {
-        try {
-          setRiwayatList(JSON.parse(dataStr));
-        } catch {
-          setRiwayatList([]);
-        }
-      }
+  // Gunakan lazy initial state untuk membaca localStorage tanpa useEffect
+  const [riwayatList] = useState<RiwayatItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    const dataStr = localStorage.getItem("riwayat");
+    if (!dataStr) return [];
+    try {
+      return JSON.parse(dataStr);
+    } catch {
+      return [];
     }
-  }, []);
-
-  if (!isMounted) {
-    return (
-      <div className="py-16 text-center text-slate-400">Memuat riwayat...</div>
-    );
-  }
+  });
 
   const totalBelanjaSemua = riwayatList.reduce(
     (acc, item) => acc + item.total,

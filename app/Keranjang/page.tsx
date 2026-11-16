@@ -22,8 +22,18 @@ type RiwayatItem = {
 };
 
 export default function KeranjangPage() {
-  const [isMounted, setIsMounted] = useState<boolean>(false);
-  const [keranjang, setKeranjang] = useState<CartItem[]>([]);
+  // Gunakan lazy initial state untuk membaca localStorage tanpa useEffect
+  const [keranjang, setKeranjang] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    const dataStr = localStorage.getItem("keranjang");
+    if (!dataStr) return [];
+    try {
+      return JSON.parse(dataStr);
+    } catch {
+      return [];
+    }
+  });
+
   const [kodePromoInput, setKodePromoInput] = useState<string>("");
   const [promoAktif, setPromoAktif] = useState<boolean>(false);
   const [pesanPromo, setPesanPromo] = useState<string>("");
@@ -34,20 +44,6 @@ export default function KeranjangPage() {
 
   const [pesanErrorForm, setPesanErrorForm] = useState<string>("");
   const [strukBerhasil, setStrukBerhasil] = useState<RiwayatItem | null>(null);
-
-  useEffect(() => {
-    setIsMounted(true);
-    if (typeof window !== "undefined") {
-      const dataStr = localStorage.getItem("keranjang");
-      if (dataStr) {
-        try {
-          setKeranjang(JSON.parse(dataStr));
-        } catch {
-          setKeranjang([]);
-        }
-      }
-    }
-  }, []);
 
   const simpanDanBroadcast = (items: CartItem[]) => {
     setKeranjang(items);
@@ -126,7 +122,7 @@ export default function KeranjangPage() {
 
     if (caraAmbil === "diantar" && kelasPemesan.trim().length < 3) {
       setPesanErrorForm(
-        "Kelas wajib diisi minimal 3 karakter jika pesanan diantar.",
+        "Kelas wajib diisi minimal 3 karakter jika pesanan diantar."
       );
       return;
     }
@@ -176,15 +172,6 @@ export default function KeranjangPage() {
     setPesanPromo("");
   };
 
-  // Jangan render isi keranjang sebelum komponen ter-mount di klien untuk mencegah hydration error
-  if (!isMounted) {
-    return (
-      <div className="py-16 text-center text-slate-400">
-        Memuat keranjang...
-      </div>
-    );
-  }
-
   if (strukBerhasil) {
     return (
       <div className="mx-auto max-w-xl py-10 text-white px-4">
@@ -229,7 +216,7 @@ export default function KeranjangPage() {
               {strukBerhasil.diskon > 0 && (
                 <div className="flex justify-between text-green-400">
                   <span>Diskon</span>
-                  <span>- {rupiah(strukBerhasil.diskon)}</span>
+                  <span>{rupiah(strukBerhasil.diskon)}</span>
                 </div>
               )}
               {strukBerhasil.ongkir > 0 && (
@@ -403,7 +390,7 @@ export default function KeranjangPage() {
               {diskon > 0 && (
                 <div className="flex justify-between text-green-400">
                   <span>Diskon (10%)</span>
-                  <span>- {rupiah(diskon)}</span>
+                  <span>{rupiah(diskon)}</span>
                 </div>
               )}
               {caraAmbil === "diantar" && (
